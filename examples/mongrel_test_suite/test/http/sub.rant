@@ -1,0 +1,4 @@
+desc "Behavior for http"
+task :all do
+  sys "spec", sys["*.rb"]
+end

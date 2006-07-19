@@ -1,0 +1,4 @@
+desc "Behavior for camping"
+task :all do
+  sys "spec", sys["*.rb"]
+end

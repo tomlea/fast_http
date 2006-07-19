@@ -1,0 +1,252 @@
+= RFuzz HTTP Destroyer 
+
+RFuzz is the start of a Ruby based HTTP thrasher, destroyer, fuzzer, and client
+based on the Mongrel project's HTTP parser and the statistical analysis of
+being very mean to a web server.
+
+At the moment is has a working and fairly extensive HTTP 1.1 client and some
+basic statistics math borrowed from the Mongrel project.
+
+In order for the test cases to run you need to start any Rails project on 
+port 3000.  Future releases will have tests starting built-in Mongrel servers to
+validate client functionality.
+
+
+== Motivation
+
+The motivation for RFuzz comes from little scripts I've written during Mongrel
+development to "fuzz" or attack the Mongrel code.
+
+RFuzz will simply use the built-in ultra-correct HTTP client and a Ruby DSL to
+let you write scripts that exploit servers, thrash them with random data, or
+simply run simple test suites.
+
+It may also perform analysis of performance data and work as a simply load or
+pen testing tool.  This is only a secondary goal though since there's plenty of
+good tools for that.
+
+== Downloading
+
+Right now RFuzz just sits on my server, so you can download 
+http://www.zedshaw.com/projects/rfuzz/rfuzz-0.4.gem or 
+http://www.zedshaw.com/projects/rfuzz/rfuzz-0.4.tgz
+for the 0.4 version.
+
+Once it can actually be used to fuzz a system I'll make a RubyForge project.
+
+== RFuzz HTTP Client
+
+It also comes from not being satisfied with the stock net/http library.  While
+this library is good for high-level HTTP access to resources, it is much too
+abstract and protective to be used in a fuzzing tool.
+
+In a tool such as RFuzz you need to have the following features in an HTTP
+client library:
+
+1. No protection from exceptions to analyze exactly what's happening.
+2. Ability to "throttle" the client to simulate different kinds of request loads.
+3. No threading or additional overhead to test the impact of threads, but thread safe.
+4. Ability to encode the majority of the request as data elements for loading.
+5. Fast and exact HTTP parser to validate the server's response is correct.
+6. Tracks cookies between requests to keep session data going.
+
+RFuzz::HttpClient supports all of these features already, with cookies being
+the weakest right now.
+
+=== Using The Client
+
+The client is designed that you create an RFuzz::HttpClient object once with
+all the common parameters and the host you want to talk with, and then you call
+a series of methods on the client object that match the HTTP methods GET, POST,
+PUT, DELETE, and HEAD.  You can add more methods if you like (see the documentation).
+
+Here's a simple example:
+
+  require 'rfuzz/client'
+
+  cl = RFuzz::HttpClient.new("www.google.com", 80, :query => {"q" => "zed shaw"})
+  
+  resp = cl.get("/search")
+  resp.http_body.grep(/zed/)
+  => ["<html><head><meta HTTP-EQUIV=\"content-type\" CONTENT=\"text/html; 
+       charset=ISO-8859-1\"><title>zed shaw - Google Search</title><style><!--\n"]
+  
+  resp = cl.get("/search", :query => {"q" => "frank"})
+  => ["<html><head><meta HTTP-EQUIV=\"content-type\" CONTENT=\"text/html; 
+      charset=ISO-8859-1\"><title>frank - Google Search</title><style><!--\n"]
+
+Notice that we made a client that actually had a default :query to just search for 
+my name (Zed Shaw) and then we only had to cl.get("/search").  In the second
+query though we just set :query to something else (a search for "frank") and it
+automatically overrides the parameters.  This makes it possible to set common 
+parameters, cookies, and headers in blocks of requests to reduce repetition.
+
+=== Client Limitations
+
+You can use the HTTP client right now to do HTTP requests and it is probably a
+lot easier than net/http for most requests that don't require complex POST bodies 
+encoding.  It also contains full documentation and has a full suite of encoding
+and decoding libraries.  It can't handle large HTTP bodies yet.
+
+It can't also parse cookies properly yet, so the above example kind of works, but the
+cookie isn't returned right.
+
+== Randomness Generator
+
+RFuzz features a RandomGenerator class that uses the ArcFour random number 
+generation algorithm to generate lots of random garbage very fast in various
+formats.  RFuzz will use this to send the garbage it needs to the application
+in an attempt to find forms that can't handle nastiness, badly implemented 
+servers, etc.  It's amazing how many bugs you actually can find by sending
+junk to an application.
+
+The types of randomness you can generate are:
+
+* words -- RFuzz includes a simple word list, but you can add your own.
+* base64 -- Arrays of base64 encoded junk.
+* byte_array -- Arrays of just junk.
+* uris -- Arrays of URIs composed of words strung together with /.
+* ints -- Random integers (with an allowed maximum).
+* floats -- Random floats.
+* headers,queries -- Hashes of key=value where the keys and values can be any of the above.
+
+The ArcFour fuzzrnd random generator is in a C extension so it's small and fast.
+A big advantage of fuzzrnd is that it generates the same stream of random bytes
+for the same input seeds.  This lets you set a seed and then if you find an 
+error replay the same attack but still have random data.
+
+An example of using RandomGenerator is:
+
+  g = RFuzz::RandomGenerator.new(open("resources/words.txt").read.split("\n"))
+  h = g.headers(2,4,type=:ints)
+  => [{1398667391=>2615968266, 465122870=>2683411899, 2100652296=>4131806743, 
+     158954822=>2544978312}, {3126281447=>2247028995, 269763016=>1444943723, 
+     2401569363=>1661839605, 2811294153=>400252371}]
+
+As you can see this produces 2 hashes consisting of 4 key=value pairs with integers in them.  You can quickly replace type=:ints with type=:words and get:
+
+  => [{"Europeanizes"=>"Byronize's", "royalization's"=>"Americanizer's", 
+     "celiorrhea"=>"unliteralized", "unvictimized"=>"doctrinize"}, 
+     {"pouder"=>"unchloridized", "chattelize"=>"unmodernize", 
+     "uncrystallizability"=>"uncenter", "Egyptianization's"=>"ostracization's"}]
+
+Using the included dictionary of words.
+
+= Fuzzing Sessions And Statistics
+
+The main way that you'll use RFuzz is to use the RFuzz::Session class to
+perform RFuzz runs and store the results in various .csv files for analysis
+later.  RFuzz makes the stance that it shouldn't be used for analyzing the
+data, but rather it should generate information that you can put through
+a better tool.  Examples of such tools are R, gnuplot, ploticus, or a spreadsheet.
+
+The Session class is initialized in a similar fashion to the HttpClient, except
+you can't set the :notifier (it's used to collect statistics about the requests).
+Once you have a Session object you call it's Session#run method to do a run
+of a set of samples and then put your tests inside a block.
+
+When a run is done it saves the results to two CSV files so you can analyze them.
+
+Here's a small sample of how Session is used:
+
+  require 'rfuzz/session'
+  include RFuzz
+  s = Session.new :host => "localhost", :port => 3000
+  s.run 5, :save_as => ["runs.csv","counts.csv"] do |c,r|
+    uris = r.uris(50,r.num(30))
+    uris.each do |u| 
+      s.count_errors(:words) do
+        resp = c.get(u)
+        s.count resp.http_status
+      end
+    end
+  end
+
+If you run this (having a server at localhost:3000) you'll find two 
+files in the current directory:  runs.csv and counts.csv.  These files
+might look like this:
+
+  -- runs.csv --
+  run,name,sum,sumsq,n,mean,sd,min,max
+  0,request,0.517807,0.010310748693,50.0,0.01035614,0.0100491312529583,0.001729,0.074479
+  1,request,0.48696,0.010552774434,50.0,0.0097392,0.0108892135376889,0.001667,0.081887
+  2,request,0.322049,0.004898592637,50.0,0.00644098,0.00759199560893725,0.000806,0.057761
+  3,request,0.271233,0.004324191489,50.0,0.00542466,0.00763028964494234,0.000828,0.057182
+  4,request,0.27697,0.001659079814,50.0,0.0055394,0.00159611899203497,0.000791,0.010722
+
+  -- counts.csv --
+  run,404,200
+  0,46,4
+  1,41,9
+  2,48,2
+  3,42,8
+  4,49,1
+
+You can then easily load these two files into any tool you want to analyze
+the results.
+
+=== Counts vs. Samples vs. Runs
+
+Something many people don't do correctly which RFuzz tries to implicitly 
+enforce is that doing just one run isn't as useful as doing a set of
+runs.  You might not be familiar with the terminology, so let's cover that
+first.
+
+* count -- Just a simple count of some variable during a run.
+* sample -- A sample is the result of taking a measurement during a run.
+* run -- This is a test that you perform and then collect counts and samples for.
+
+In the above sample script, we are doing the following:
+
+* 5 runs.
+* That do GET requests for up to 50 randomly selected URIs.
+* Counting errors, HTTP status codes.
+* And gathers stats on the request timing (Session does this automatically).
+
+If you were to structure this into a data structure it would like this:
+
+  [
+    ["run", "name", "sum", "sumsq", "n", "mean", "sd", "min", "max"],
+    [0, :request, 0.605363, 0.0149, 50.0, 0.0121, 0.0124, 0.00851, 0.095579], 
+    [1, :request, 0.520827, 0.0116, 50.0, 0.0104, 0.0112, 0.00189, 0.088004],
+    ...
+  ]
+
+Taking a look at this, we have run 0, run 1, ... and then each "row" has a
+set of satistics we've gathered on the HTTP request (shown as "name").  These
+statistics are actually generated from the random 50 URI requests we built
+with this set of code:
+
+  uris = r.uris(50,r.num(30))
+
+Which means that each row is the statistics collected as each request is made
+from the 50 randomly generated URIs.  If I were to write this out it'd be:
+
+1. Generate 50 random URIs.
+2. Request URIs 1-50, record how long each one takes.
+3. Average (with standard deviation) the times for each request.
+4. Store this as one "run".
+5. Repeat until all the runs are done.
+
+By doing this you cut down on the amount of information you need to analyze
+to figure out if a server is behaving correctly.  Instead of wading through
+tons of data about each request, you just analyze the "meta-statistics" about
+the runs.
+
+=== Sample Runs Reduce Error
+
+The reason for doing a series of runs and analyzing their standard deviation (sd)
+and means is that it reduces the chance that one long run was just done at the
+wrong time or in the wrong situation.  If you just ran a test once with the
+same settings every time you might not find out until later that there was
+some confounding element which made the test invalid.
+
+
+== Source Code
+
+The .tgz file (mentioned Downloading) has the source if you're interested.  Remember
+that *you must have a rails app on 3000* for the tests to run.  Just a limitation
+right now until I hook Mongrel into the test framework as the feedback loop.
+
+You can also view http://www.zedshaw.com/projects/rfuzz/coverage/ for the rcov
+generated coverage report which is also a decent source browser.

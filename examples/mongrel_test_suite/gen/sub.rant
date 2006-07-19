@@ -1,0 +1,16 @@
+
+desc "Generate a new spec [suite=SUITE spec=NAME]"
+task :spec => [:suite_dirs] do
+  open("../test/#{var[:suite]}/#{var[:spec]}.rb","w") {|f| f.write(spec_file(var[:spec])) }
+end
+
+desc "Generate new spec suite [suite=SUITE]"
+task :suite => [:suite_dirs] do
+  open("../test/sub.rant","a") {|f| f.write("subdirs '#{var[:suite]}'\n") }
+  open("../test/#{var[:suite]}/sub.rant","w") { |f| f.write(sub_rant(var[:suite])) }
+end
+
+task :suite_dirs do
+  sys.mkdir_p "../test/#{var[:suite]}"
+end
+
