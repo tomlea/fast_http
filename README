@@ -7,10 +7,6 @@ being very mean to a web server.
 At the moment is has a working and fairly extensive HTTP 1.1 client and some
 basic statistics math borrowed from the Mongrel project.
 
-In order for the test cases to run you need to start any Rails project on 
-port 3000.  Future releases will have tests starting built-in Mongrel servers to
-validate client functionality.
-
 
 == Motivation
 
@@ -25,14 +21,15 @@ It may also perform analysis of performance data and work as a simply load or
 pen testing tool.  This is only a secondary goal though since there's plenty of
 good tools for that.
 
-== Downloading
+== Installing
 
-Right now RFuzz just sits on my server, so you can download 
-http://www.zedshaw.com/projects/rfuzz/rfuzz-0.4.gem or 
-http://www.zedshaw.com/projects/rfuzz/rfuzz-0.4.tgz
-for the 0.4 version.
+You can install RFuzz by simply using RubyGems:
 
-Once it can actually be used to fuzz a system I'll make a RubyForge project.
+  sudo gem install rfuzz
+
+It doesn't support windows unless you have build tools that can compile
+modules against Ruby.  No, you don't get this with Ruby One Click.
+
 
 == RFuzz HTTP Client
 
@@ -83,10 +80,10 @@ parameters, cookies, and headers in blocks of requests to reduce repetition.
 
 === Client Limitations
 
-You can use the HTTP client right now to do HTTP requests and it is probably a
-lot easier than net/http for most requests that don't require complex POST bodies 
-encoding.  It also contains full documentation and has a full suite of encoding
-and decoding libraries.  It can't handle large HTTP bodies yet.
+The client handles chunked encoding inside the parser but the code for it is
+still quite nasty.  I'll be attacking that and cleaning it up very soon.
+Even with this it's able to efficiently parse chunked encodings without
+many problems (but could be better).
 
 It can't also parse cookies properly yet, so the above example kind of works, but the
 cookie isn't returned right.
@@ -243,10 +240,6 @@ some confounding element which made the test invalid.
 
 
 == Source Code
-
-The .tgz file (mentioned Downloading) has the source if you're interested.  Remember
-that *you must have a rails app on 3000* for the tests to run.  Just a limitation
-right now until I hook Mongrel into the test framework as the feedback loop.
 
 You can also view http://www.zedshaw.com/projects/rfuzz/coverage/ for the rcov
 generated coverage report which is also a decent source browser.

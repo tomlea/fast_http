@@ -18,7 +18,7 @@ setup_extension('fuzzrnd','fuzzrnd')
 desc "Does a full compile, test run"
 task :default => [:http11_client, :fuzzrnd, :test]
 
-version="0.5"
+version="0.7"
 name="rfuzz"
 
 setup_gem(name, version) do |spec|
@@ -44,7 +44,5 @@ task :uninstall => [:clean] do
 end
 
 task :project => [:clean, :ragel, :default, :test, :rdoc, :rcov, :package] do
-  print "Username: "
-  username = STDIN.readline.strip
-  sh %{rsync -avz pkg/*.gem pkg/*.tgz doc/rdoc/* test/coverage #{username}@www.zedshaw.com:zedshaw.com/projects/rfuzz/}
+  sh %{scp -r doc/rdoc test/coverage @rubyforge.org:/var/www/gforge-projects/rfuzz/}
 end

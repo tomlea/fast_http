@@ -75,10 +75,11 @@ def base_gem_spec(pkg_name, pkg_version)
     s.extra_rdoc_files = [ "README" ]
 
     s.files = %w(COPYING LICENSE README Rakefile) +
-      Dir.glob("{bin,doc/rdoc,test,lib}/**/*") + 
+      Dir.glob("{bin,doc/rdoc,test}/**/*") + 
       Dir.glob("ext/**/*.{h,c,rb}") +
       Dir.glob("examples/**/*.rb") +
-      Dir.glob("tools/*.rb")
+      Dir.glob("tools/*.rb") + 
+      Dir.glob(RUBY_PLATFORM !~ /mswin/ ? "lib/**/*.rb" : "lib/**/*")
 
     s.require_path = "lib"
     s.extensions = FileList["ext/**/extconf.rb"].to_a
@@ -89,6 +90,7 @@ end
 def setup_gem(pkg_name, pkg_version)
   spec = base_gem_spec(pkg_name, pkg_version)
   yield spec if block_given?
+
 
   Rake::GemPackageTask.new(spec) do |p|
     p.gem_spec = spec
