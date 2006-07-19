@@ -7,6 +7,14 @@ being very mean to a web server.
 At the moment is has a working and fairly extensive HTTP 1.1 client and some
 basic statistics math borrowed from the Mongrel project.
 
+== RubyForge Project
+
+The project is hosted at:
+
+ http://rubyforge.org/projects/rfuzz/
+
+Where you can file bugs and other things, as well as download gems manually.
+
 
 == Motivation
 
