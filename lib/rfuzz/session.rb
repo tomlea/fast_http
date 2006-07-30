@@ -12,6 +12,8 @@ module RFuzz
     attr_accessor :counts
     attr_accessor :runs
     attr_accessor :tracking
+    attr_reader :client
+    attr_reader :rand
 
     # Sets up a session that you then operate by calling Session#run.  Most of the
     # functions do not work unless they are inside a Session#run call.
@@ -56,7 +58,7 @@ module RFuzz
     #
     # Once you call run, the block you pass it is given an HttpClient and a RandomGenerator.  Each run will reset the HttpClient so you can pretend it is brand new.
     #
-    def run(count, options={})
+    def run(count=1, options={})
       sample = options[:sample] || [:request]
       count.times do |i|
         # setup for this latest sample run

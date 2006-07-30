@@ -43,6 +43,11 @@ task :uninstall => [:clean] do
   sh %{sudo gem uninstall #{name}}
 end
 
-task :project => [:clean, :ragel, :default, :test, :rdoc, :rcov, :package] do
+task :site do
+  sh %{pushd doc/site; webgen; popd}
+  sh %{scp -r doc/site/output/* @rubyforge.org:/var/www/gforge-projects/rfuzz/}
+end
+
+task :project => [:clean, :ragel, :default, :test, :rdoc, :rcov, :package, :site] do
   sh %{scp -r doc/rdoc test/coverage @rubyforge.org:/var/www/gforge-projects/rfuzz/}
 end
