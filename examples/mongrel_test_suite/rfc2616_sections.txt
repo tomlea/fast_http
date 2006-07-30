@@ -1,0 +1,240 @@
+3,Protocol Parameters
+3.1,HTTP Version
+3.2,Uniform Resource Identifiers
+3.2.1,General Syntax
+3.2.2,http URL
+3.2.3,URI Comparison
+3.3,Date/Time Formats
+3.3.1,Full Date
+3.3.2,Delta Seconds
+3.4,Character Sets
+3.4.1,Missing Charset
+3.5,Content Codings
+3.6,Transfer Codings
+3.6.1,Chunked Transfer Coding
+3.7,Media Types
+3.7.1,Canonicalization and Text Defaults
+3.7.2,Multipart Types
+3.8,Product Tokens
+3.9,Quality Values
+3.10,Language Tags
+3.11,Entity Tags
+3.12,Range Units
+4,HTTP Message
+4.1,Message Types
+4.2,Message Headers
+4.3,Message Body
+4.4,Message Length
+4.5,General Header Fields
+5,Request
+5.1,Request-Line
+5.1.1,Method
+5.1.2,Request-URI
+5.2,The Resource Identified by a Request
+5.3,Request Header Fields
+6,Response
+6.1,Status-Line
+6.1.1,Status Code and Reason Phrase
+6.2,Response Header Fields
+7,Entity
+7.1,Entity Header Fields
+7.2,Entity Body
+7.2.1,Type
+7.2.2,Entity Length
+8,Connections
+8.1,Persistent Connections
+8.1.1,Purpose
+8.1.2,Overall Operation
+8.1.3,Proxy Servers
+8.1.4,Practical Considerations
+8.2,Message Transmission Requirements
+8.2.1,Persistent Connections and Flow Control
+8.2.2,Monitoring Connections for Error Status Messages
+8.2.3,Use of the 100 (Continue) Status
+8.2.4,Client Behavior if Server Prematurely Closes Connection
+9,Method Definitions
+9.1,Safe and Idempotent Methods
+9.1.1,Safe Methods
+9.1.2,Idempotent Methods
+9.2,OPTIONS
+9.3,GET
+9.4,HEAD
+9.5,POST
+9.6,PUT
+9.7,DELETE
+9.8,TRACE
+9.9,CONNECT
+10,Status Code Definitions
+10.1,Informational 1xx
+10.1.1,100 Continue
+10.1.2,101 Switching Protocols
+10.2,Successful 2xx
+10.2.1,200 OK
+10.2.2,201 Created
+10.2.3,202 Accepted
+10.2.4,203 Non-Authoritative Information
+10.2.5,204 No Content
+10.2.6,205 Reset Content
+10.2.7,206 Partial Content
+10.3,Redirection 3xx
+10.3.1,300 Multiple Choices
+10.3.2,301 Moved Permanently
+10.3.3,302 Found
+10.3.4,303 See Other
+10.3.5,304 Not Modified
+10.3.6,305 Use Proxy
+10.3.7,306 (Unused)
+10.3.8,307 Temporary Redirect
+10.4,Client Error 4xx
+10.4.1,400 Bad Request
+10.4.2,401 Unauthorized
+10.4.3,402 Payment Required
+10.4.4,403 Forbidden
+10.4.5,404 Not Found
+10.4.6,405 Method Not Allowed
+10.4.7,406 Not Acceptable
+10.4.8,407 Proxy Authentication Required
+10.4.9,408 Request Timeout
+10.4.10,409 Conflict
+10.4.11,410 Gone
+10.4.12,411 Length Required
+10.4.13,412 Precondition Failed
+10.4.14,413 Request Entity Too Large
+10.4.15,414 Request-URI Too Long
+10.4.16,415 Unsupported Media Type
+10.4.17,416 Requested Range Not Satisfiable
+10.4.18,417 Expectation Failed
+10.5,Server Error 5xx
+10.5.1,500 Internal Server Error
+10.5.2,501 Not Implemented
+10.5.3,502 Bad Gateway
+10.5.4,503 Service Unavailable
+10.5.5,504 Gateway Timeout
+10.5.6,505 HTTP Version Not Supported
+11,Access Authentication
+12,Content Negotiation
+12.1,Server-driven Negotiation
+12.2,Agent-driven Negotiation
+12.3,Transparent Negotiation
+13,Caching in HTTP
+13.1.1,Cache Correctness
+13.1.2,Warnings
+13.1.3,Cache-control Mechanisms
+13.1.4,Explicit User Agent Warnings
+13.1.5,Exceptions to the Rules and Warnings
+13.1.6,Client-controlled Behavior
+13.2,Expiration Model
+13.2.1,Server-Specified Expiration
+13.2.2,Heuristic Expiration
+13.2.3,Age Calculations
+13.2.4,Expiration Calculations
+13.2.5,Disambiguating Expiration Values
+13.2.6,Disambiguating Multiple Responses
+13.3,Validation Model
+13.3.1,Last-Modified Dates
+13.3.2,Entity Tag Cache Validators
+13.3.3,Weak and Strong Validators
+13.3.4,Rules for When to Use Entity Tags and Last-Modified Dates
+13.3.5,Non-validating Conditionals
+13.4,Response Cacheability
+13.5,Constructing Responses From Caches
+13.5.1,End-to-end and Hop-by-hop Headers
+13.5.2,Non-modifiable Headers
+13.5.3,Combining Headers
+13.5.4,Combining Byte Ranges
+13.6,Caching Negotiated Responses
+13.7,Shared and Non-Shared Caches
+13.8,Errors or Incomplete Response Cache Behavior
+13.9,Side Effects of GET and HEAD
+13.10,Invalidation After Updates or Deletions
+13.11,Write-Through Mandatory
+13.12,Cache Replacement
+13.13,History Lists
+14,Header Field Definitions
+14.1,Accept
+14.2,Accept-Charset
+14.3,Accept-Encoding
+14.4,Accept-Language
+14.5,Accept-Ranges
+14.6,Age
+14.7,Allow
+14.8,Authorization
+14.9,Cache-Control
+14.9.1,What is Cacheable
+14.9.2,What May be Stored by Caches
+14.9.3,Modifications of the Basic Expiration Mechanism
+14.9.4,Cache Revalidation and Reload Controls
+14.9.5,No-Transform Directive
+14.9.6,Cache Control Extensions
+14.10,Connection
+14.11,Content-Encoding
+14.12,Content-Language
+14.13,Content-Length
+14.14,Content-Location
+14.15,Content-MD5
+14.16,Content-Range
+14.17,Content-Type
+14.18,Date
+14.18.1,Clockless Origin Server Operation
+14.19,ETag
+14.20,Expect
+14.21,Expires
+14.22,From
+14.23,Host
+14.24,If-Match
+14.25,If-Modified-Since
+14.26,If-None-Match
+14.27,If-Range
+14.28,If-Unmodified-Since
+14.29,Last-Modified
+14.30,Location
+14.31,Max-Forwards
+14.32,Pragma
+14.33,Proxy-Authenticate
+14.34,Proxy-Authorization
+14.35,Range
+14.35.1,Byte Ranges
+14.35.2,Range Retrieval Requests
+14.36,Referer
+14.37,Retry-After
+14.38,Server
+14.39,TE
+14.40,Trailer
+14.41,Transfer-Encoding
+14.42,Upgrade
+14.43,User-Agent
+14.44,Vary
+14.45,Via
+14.46,Warning
+14.47,WWW-Authenticate
+15,Security Considerations
+15.1,Personal Information
+15.1.1,Abuse of Server Log Information
+15.1.2,Transfer of Sensitive Information
+15.1.3,Encoding Sensitive Information in URI's
+15.1.4,Privacy Issues Connected to Accept Headers
+15.2,Attacks Based On File and Path Names
+15.3,DNS Spoofing
+15.4,Location Headers and Spoofing
+15.5,Content-Disposition Issues
+15.6,Authentication Credentials and Idle Clients
+15.7,Proxies and Caching
+15.7.1,Denial of Service Attacks on Proxies
+19.1,Internet Media Type message/http and application/http
+19.2,Internet Media Type multipart/byteranges
+19.3,Tolerant Applications
+19.4,Differences Between HTTP Entities and RFC 2045 Entities
+19.4.1,MIME-Version
+19.4.2,Conversion to Canonical Form
+19.4.3,Conversion of Date Formats
+19.4.4,Introduction of Content-Encoding
+19.4.5,No Content-Transfer-Encoding
+19.4.6,Introduction of Transfer-Encoding
+19.4.7,MHTML and Line Length Limitations
+19.5,Additional Features
+19.5.1,Content-Disposition
+19.6,Compatibility with Previous Versions
+19.6.1,Changes from HTTP/1
+19.6.2,Compatibility with HTTP/1
+19.6.3,Changes from RFC 2068
+
