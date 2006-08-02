@@ -8,7 +8,6 @@
 #include <assert.h>
 #include <string.h>
 #include <ctype.h>
-#include <inttypes.h>
 
 static VALUE mRFuzz;
 static VALUE cFuzzRnd;
@@ -48,7 +47,7 @@ static struct
 VALUE FuzzRnd_data(VALUE self, VALUE length)
 {
 
-  uint32_t n;
+  unsigned int n;
   unsigned char a,b;
   size_t len = 0;
   VALUE data;

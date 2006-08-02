@@ -125,7 +125,7 @@ class RFuzzClientTest < Test::Unit::TestCase
     assert_equal 10, cl.notifier.event_count, "not all events fired"
    
     # try to get notified about errors
-    assert_raises Errno::ECONNREFUSED do
+    assert_raises Errno::ECONNREFUSED,Errno::EBADF do
       cl = HttpClient.new(@host, "300", :notifier => TestNotifier.new)
       cl.get("/test/notifier/fail")
     end
@@ -136,9 +136,13 @@ class RFuzzClientTest < Test::Unit::TestCase
 
   def test_chunked_encoding
     50.times do
-      resp = @client.get("/chunked")
-      assert_equal resp["X_REAL_LENGTH"].to_i, resp.http_body.length
-      assert_equal resp["X_MD5_SUM"],Digest::MD5.new(resp.http_body).to_s
+      th = Thread.new { loop { sleep 1 } }
+
+      Timeout::timeout(3) {
+        resp = @client.get("/chunked")
+        assert_equal resp["X_REAL_LENGTH"].to_i, resp.http_body.length
+        assert_equal resp["X_MD5_SUM"],Digest::MD5.new(resp.http_body).to_s
+      }
     end
   end
 

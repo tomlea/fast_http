@@ -2,6 +2,7 @@ require 'http11_client'
 require 'socket'
 require 'stringio'
 require 'rfuzz/stats'
+require 'timeout'
 
 module RFuzz
 
@@ -261,7 +262,8 @@ module RFuzz
           if size == 0
             return :finished, nil
           end
-          remain =  size -out.write(input.read(size))
+
+          remain =  size - out.write(input.read(size))
           return :incomplete_body, remain if remain > 0
 
           line = input.read(2)

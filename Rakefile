@@ -8,7 +8,7 @@ require 'fileutils'
 include FileUtils
 
 setup_tests
-setup_clean ["pkg", "lib/*.bundle", "*.gem", ".config"]
+setup_clean ["pkg", "lib/*.bundle", "*.gem", ".config", "ext/**/Makefile"]
 
 setup_rdoc ['README', 'LICENSE', 'COPYING', 'lib/**/*.rb', 'doc/**/*.rdoc']
 
