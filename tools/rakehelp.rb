@@ -64,6 +64,8 @@ end
 
 
 def base_gem_spec(pkg_name, pkg_version)
+  rm_rf "test/coverage"
+
   pkg_version = pkg_version
   pkg_name    = pkg_name
   pkg_file_name = "#{pkg_name}-#{pkg_version}"
@@ -75,10 +77,10 @@ def base_gem_spec(pkg_name, pkg_version)
     s.extra_rdoc_files = [ "README" ]
 
     s.files = %w(COPYING LICENSE README Rakefile) +
-      Dir.glob("{bin,doc/rdoc,test}/**/*") + 
+      Dir.glob("{bin,doc/rdoc}/**/*") + 
       Dir.glob("ext/**/*.{h,c,rb}") +
       Dir.glob("examples/**/*.rb") +
-      Dir.glob("tools/*.rb") + 
+      Dir.glob("tools/*.rb") +
       Dir.glob(RUBY_PLATFORM !~ /mswin/ ? "lib/**/*.rb" : "lib/**/*")
 
     s.require_path = "lib"
