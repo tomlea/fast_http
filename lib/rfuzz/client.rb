@@ -40,6 +40,7 @@ module RFuzz
   # with the protocol.  It's used by HttpClient, but you can use it
   # as well.
   module HttpEncoding
+    COOKIE="Cookie"
 
     # Converts a Hash of cookies to the appropriate simple cookie
     # headers.
@@ -47,9 +48,9 @@ module RFuzz
       result = ""
       cookies.each do |k,v|
         if v.kind_of? Array
-          v.each {|x| result += encode_field("Cookie", encode_param(k,x)) }
+          v.each {|x| result += encode_field(COOKIE, encode_param(k,x)) }
         else
-          result += encode_field("Cookie", encode_param(k,v))
+          result += encode_field(COOKIE, encode_param(k,v))
         end
       end
       return result
@@ -203,6 +204,8 @@ module RFuzz
     LOCATION="LOCATION"
     HOST="HOST"
     HTTP_REQUEST_HEADER="%s %s HTTP/1.1\r\n"
+    REQ_CONTENT_LENGTH="Content-Length"
+    REQ_HOST="Host"
 
     # Access to the host, port, default options, and cookies currently in play
     attr_accessor :host, :port, :options, :cookies, :allowed_methods, :notifier
@@ -233,8 +236,8 @@ module RFuzz
       head = ops[:head].merge(head) if ops[:head]
 
       # setup basic headers we always need
-      head[HOST] = encode_host(@host,@port)
-      head[CONTENT_LENGTH] = ops[:body] ? ops[:body].length : 0
+      head[REQ_HOST] = encode_host(@host,@port)
+      head[REQ_CONTENT_LENGTH] = ops[:body] ? ops[:body].length : 0
 
       # blast it out
       out.write(HTTP_REQUEST_HEADER % [method, encode_query(uri,query)])

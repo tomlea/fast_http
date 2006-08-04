@@ -23,7 +23,6 @@ context "3: Protocol Parameters" do
     # "URI-reference", "absoluteURI", "relativeURI", "port",
     # "host","abs_path", "rel_path", and "authority"
 
-
     # MUST be able to handle the URI of any resource they serve
 
     # SHOULD be able to handle URIs of unbounded length if they
