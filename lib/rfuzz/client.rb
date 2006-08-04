@@ -295,7 +295,7 @@ module RFuzz
         if result.nil?
           sock.read(2)
         else
-          sock.read(result.length - 2)
+          sock.read((result.length - 2).abs)
         end
       when :incomplete_body
         out.write(sock.read(result))  # read the remaining
