@@ -113,7 +113,7 @@ class RFuzzClientTest < Test::Unit::TestCase
 
   def test_allowed_methods
     cl = HttpClient.new(@host, @port, :allowed_methods => [:nada])
-    assert_raises RuntimeError do
+    assert_raises HttpClientError do
       cl.get("/test/wrongmethod")
     end
   end

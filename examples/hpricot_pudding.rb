@@ -5,7 +5,7 @@ include RFuzz
 
 agent = "Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.0.4) Gecko/20060608 Ubuntu/dapper-security Firefox/1.5.0.4"
 
-google = HttpClient.new("www.google.com", 80)
+google = HttpClient.new("www.google.com", 80, :redirect => 10)
 r = google.get("/search", :head => {"User-Agent" => agent}, :query => {
                "q" => ARGV[0], "hl" => "en", "btnG" => "Google Search"})
 

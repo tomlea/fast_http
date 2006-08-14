@@ -7,9 +7,6 @@ context "3: Protocol Parameters" do
 
   specify "3.1: HTTP Version" do
     # "HTTP" "/" 1*DIGIT "." 1*DIGIT
-    @sess.run {|c,r|
-      c.get("/").http_version.should_match /HTTP\/[0-9]+\.[0-9]+/
-    }
   end
 
 

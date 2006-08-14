@@ -50,6 +50,10 @@
     parser->chunk_size(parser->data, PTR_TO(mark), LEN(mark, fpc));
   }
 
+  action last_chunk {
+    parser->last_chunk(parser->data, NULL, 0);
+  }
+
   action done { 
     parser->body_start = fpc - buffer + 1; 
     if(parser->header_done != NULL)
@@ -75,19 +79,19 @@
 
   field_name = token+ >start_field %write_field;
   field_value = any* >start_value %write_value;
-  message_header = field_name ": " field_value :> CRLF;
+  message_header = field_name ":" " "* field_value :> CRLF;
 
   Response = 	Status_Line (message_header)* (CRLF @done);
 
   chunk_ext_val = token+;
   chunk_ext_name = token+;
   chunk_extension = (";" chunk_ext_name >start_field %write_field %start_value ("=" chunk_ext_val >start_value)? %write_value )*;
-  last_chunk = "0"? chunk_extension :> (CRLF @done);
+  last_chunk = "0"? chunk_extension :> (CRLF @last_chunk @done);
   chunk_size = xdigit+;
   chunk = chunk_size >mark %chunk_size chunk_extension :> (CRLF @done);
-  Chunked_Body = (chunk | last_chunk);
+  Chunked_Header = (chunk | last_chunk);
 
-  main := Response | Chunked_Body;
+  main := Response | Chunked_Header;
 }%%
 
 /** Data **/

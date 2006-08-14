@@ -19,6 +19,7 @@ static VALUE eHttpClientParserError;
 #define  id_version rb_intern("@http_version")
 #define  id_body rb_intern("@http_body")
 #define  id_chunk_size rb_intern("@http_chunk_size")
+#define  id_last_chunk rb_intern("@last_chunk")
 
 void client_http_field(void *data, const char *field, size_t flen, const char *value, size_t vlen)
 {
@@ -75,7 +76,6 @@ void client_http_version(void *data, const char *at, size_t length)
 
 /** Finalizes the request header to have a bunch of stuff that's
   needed. */
-
 void client_header_done(void *data, const char *at, size_t length)
 {
   VALUE req = (VALUE)data;
@@ -90,9 +90,18 @@ void client_chunk_size(void *data, const char *at, size_t length)
   VALUE req = (VALUE)data;
   VALUE v = Qnil;
 
+  if(length <= 0) {
+    rb_raise(eHttpClientParserError, "Chunked Encoding gave <= 0 chunk size.");
+  }
+
   v = rb_str_new(at, length);
 
   rb_ivar_set(req, id_chunk_size, v);
+}
+
+void client_last_chunk(void *data, const char *at, size_t length) {
+  VALUE req = (VALUE)data;
+  rb_ivar_set(req, id_last_chunk,Qtrue);
 }
 
 
@@ -116,6 +125,7 @@ VALUE HttpClientParser_alloc(VALUE klass)
   hp->http_version = client_http_version;
   hp->header_done = client_header_done;
   hp->chunk_size = client_chunk_size;
+  hp->last_chunk = client_last_chunk;
   httpclient_parser_init(hp);
 
   obj = Data_Wrap_Struct(klass, NULL, HttpClientParser_free, hp);
@@ -197,6 +207,10 @@ VALUE HttpClientParser_execute(VALUE self, VALUE req_hash, VALUE data, VALUE sta
   int from = 0;
   char *dptr = NULL;
   long dlen = 0;
+
+  REQUIRE_TYPE(req_hash, T_HASH);
+  REQUIRE_TYPE(data, T_STRING);
+  REQUIRE_TYPE(start, T_FIXNUM);
 
   DATA_GET(self, httpclient_parser, http);
 

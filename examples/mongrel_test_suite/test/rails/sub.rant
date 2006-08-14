@@ -1,4 +1,32 @@
-desc "Behavior for rails"
-task :all do
-  sys "spec", sys["*.rb"]
+def stop_mongrel
+  sys "mongrel_rails stop -c ~/projects/testapp"
+  sleep 3 
 end
+
+def start_mongrel(opts)
+  sys "mongrel_rails start -c ~/projects/testapp #{opts} -d -p 3000"
+  sleep 3
+end
+
+desc "Rails compliance tests"
+task :all => [:test_prod, :test_dev]
+
+desc "Runs the rails tests under production"
+task :test_prod do
+  start_mongrel("-e production")
+  sys "spec", sys["*.rb"]
+  stop_mongrel
+end
+
+desc "Runs rails tests under development"
+task :test_dev do
+  start_mongrel("-e development")
+  sys "spec", sys["*.rb"]
+  stop_mongrel
+end
+
+desc "Stops mongrel testapp for rails"
+task :stop_mongrel do
+  stop_mongrel
+end
+

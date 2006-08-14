@@ -32,6 +32,8 @@ typedef struct httpclient_parser {
   element_cb chunk_size;
   element_cb http_version;
   element_cb header_done;
+  element_cb last_chunk;
+  
   
 } httpclient_parser;
 

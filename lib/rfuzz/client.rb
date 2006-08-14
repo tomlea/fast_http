@@ -1,24 +1,17 @@
 require 'http11_client'
 require 'socket'
-require 'stringio'
 require 'rfuzz/stats'
 require 'timeout'
+require 'rfuzz/pushbackio'
 
 module RFuzz
 
+  # Thrown for errors not related to the protocol format (HttpClientParserError are
+  # thrown for that).
+  class HttpClientError < StandardError; end
 
   # A simple hash is returned for each request made by HttpClient with
-  # the headers that were given by the server for that request.  Attached
-  # to this are four attributes you can play with:
-  #
-  #  * http_reason
-  #  * http_version
-  #  * http_status
-  #  * http_body
-  #
-  # These are set internally by the Ragel/C parser so they're very fast
-  # and pretty much C voodoo.  You can modify them without fear once you get 
-  # the response.
+  # the headers that were given by the server for that request.
   class HttpResponse < Hash
     # The reason returned in the http response ("OK","File not found",etc.)
     attr_accessor :http_reason
@@ -34,6 +27,28 @@ module RFuzz
 
     # When parsing chunked encodings this is set
     attr_accessor :http_chunk_size
+
+    # The actual chunks taken from the chunked encoding
+    attr_accessor :raw_chunks
+
+    # Converts the http_chunk_size string properly
+    def chunk_size
+      if @chunk_size == nil
+        @chunk_size = @http_chunk_size ? @http_chunk_size.to_i(base=16) : 0
+      end
+
+      @chunk_size
+    end
+
+    # true if this is the last chunk, nil otherwise (false)
+    def last_chunk?
+      @last_chunk || chunk_size == 0
+    end
+
+    # Easier way to find out if this is a chunked encoding
+    def chunked_encoding?
+      /chunked/i === self[HttpClient::TRANSFER_ENCODING]
+    end
   end
 
   # A mixin that has most of the HTTP encoding methods you need to work
@@ -41,6 +56,7 @@ module RFuzz
   # as well.
   module HttpEncoding
     COOKIE="Cookie"
+    FIELD_ENCODING="%s: %s\r\n" 
 
     # Converts a Hash of cookies to the appropriate simple cookie
     # headers.
@@ -48,9 +64,9 @@ module RFuzz
       result = ""
       cookies.each do |k,v|
         if v.kind_of? Array
-          v.each {|x| result += encode_field(COOKIE, encode_param(k,x)) }
+          v.each {|x| result << encode_field(COOKIE, encode_param(k,x)) }
         else
-          result += encode_field(COOKIE, encode_param(k,v))
+          result << encode_field(COOKIE, encode_param(k,v))
         end
       end
       return result
@@ -58,7 +74,7 @@ module RFuzz
 
     # Encode HTTP header fields of "k: v\r\n"
     def encode_field(k,v)
-      "#{k}: #{v}\r\n"
+      FIELD_ENCODING % [k,v]
     end
 
     # Encodes the headers given in the hash returning a string
@@ -67,9 +83,9 @@ module RFuzz
       result = "" 
       head.each do |k,v|
         if v.kind_of? Array
-          v.each {|x| result += encode_field(k,x) }
+          v.each {|x| result << encode_field(k,x) }
         else
-          result += encode_field(k,v)
+          result << encode_field(k,v)
         end
       end
       return result
@@ -104,12 +120,10 @@ module RFuzz
     # a Host header, but if you include port 80 then further
     # redirects will tack on the :80 which is annoying.
     def encode_host(host, port)
-      "#{host}" + (port.to_i != 80 ? ":#{port}" : "")
+      host + (port.to_i != 80 ? ":#{port}" : "")
     end
 
-    # Performs URI escaping so that you can construct proper
-    # query strings faster.  Use this rather than the cgi.rb
-    # version since it's faster.  (Stolen from Camping).
+    # Escapes a URI.
     def escape(s)
       s.to_s.gsub(/([^ a-zA-Z0-9_.-]+)/n) {
         '%'+$1.unpack('H2'*$1.size).join('%').upcase
@@ -117,7 +131,7 @@ module RFuzz
     end
 
 
-    # Unescapes a URI escaped string. (Stolen from Camping).
+    # Unescapes a URI escaped string.
     def unescape(s)
       s.tr('+', ' ').gsub(/((?:%[0-9a-fA-F]{2})+)/n){
         [$1.delete('%')].pack('H*')
@@ -206,6 +220,8 @@ module RFuzz
     HTTP_REQUEST_HEADER="%s %s HTTP/1.1\r\n"
     REQ_CONTENT_LENGTH="Content-Length"
     REQ_HOST="Host"
+    CHUNK_SIZE=1024 * 16
+    CRLF="\r\n"
 
     # Access to the host, port, default options, and cookies currently in play
     attr_accessor :host, :port, :options, :cookies, :allowed_methods, :notifier
@@ -219,6 +235,7 @@ module RFuzz
       @allowed_methods = options[:allowed_methods] || [:put, :get, :post, :delete, :head]
       @notifier = options[:notifier]
       @redirect = options[:redirect] || false
+      @parser = HttpClientParser.new
     end
 
 
@@ -243,79 +260,78 @@ module RFuzz
       out.write(HTTP_REQUEST_HEADER % [method, encode_query(uri,query)])
       out.write(encode_headers(head))
       out.write(encode_cookies(@cookies.merge(req[:cookies] || {})))
-      out.write("\r\n")
+      out.write(CRLF)
       ops[:body] || ""
     end
 
-    def read_chunks(input, out, parser)
-      begin
-        until input.closed?
-          parser.reset
-          chunk = HttpResponse.new
-          line = input.readline("\r\n")
-          nread = parser.execute(chunk, line, 0)
+    # Does the read operations needed to parse a header with the @parser.
+    # A "header" in this case is either an HTTP header or a Chunked encoding
+    # header (since the @parser handles both).
+    def read_parsed_header
+      @parser.reset
+      resp = HttpResponse.new
+      data = @sock.read(CHUNK_SIZE, partial=true)
+      nread = @parser.execute(resp, data, 0)
 
-          if !parser.finished?
-            # tried to read this header but couldn't
-            return :incomplete_header, line
-          end
-
-          size = chunk.http_chunk_size ? chunk.http_chunk_size.to_i(base=16) : 0
-
-          if size == 0
-            return :finished, nil
-          end
-
-          remain =  size - out.write(input.read(size))
-          return :incomplete_body, remain if remain > 0
-
-          line = input.read(2)
-          if line.nil? or line.length < 2
-            return :incomplete_trailer, line
-          elsif line != "\r\n"
-            raise HttpClientParserError.new("invalid chunked encoding trailer")
-          end
-        end
-      rescue EOFError
-        # this is thrown when the header read is attempted and 
-        # there's nothing in the buffer
-        return :eof_error, nil
+      while !@parser.finished?
+        data << @sock.read(CHUNK_SIZE, partial=true)
+        nread = @parser.execute(resp, data, nread)
       end
+
+      return resp
     end
 
-    def read_chunked_encoding(resp, sock, parser)
-      out = StringIO.new
-      input = StringIO.new(resp.http_body)
 
-      # read from the http body first, then continue at the socket
-      status, result = read_chunks(input, out, parser)
+    # Used to process chunked headers and then read up their bodies.
+    def read_chunked_header
+      resp = read_parsed_header
+      @sock.push(resp.http_body)
 
-      case status
-      when :incomplete_trailer
-        if result.nil?
-          sock.read(2)
-        else
-          sock.read((result.length - 2).abs)
+      if !resp.last_chunk?
+        resp.http_body = @sock.read(resp.chunk_size)
+
+        trail = @sock.read(2)
+        if trail != CRLF
+          raise HttpClientParserError.new("Chunk ended in #{trail.inspect} not #{CRLF.inspect}")
         end
-      when :incomplete_body
-        out.write(sock.read(result))  # read the remaining
-        sock.read(2)
-      when :incomplete_header
-        # push what we read back onto the socket, but backwards
-        result.reverse!
-        result.each_byte {|b| sock.ungetc(b) }
-      when :finished
-        # all done, get out
-        out.rewind; return out.read
-      when :eof_error
-        # read everything we could, ignore
       end
 
-      # then continue reading them from the socket
-      status, result = read_chunks(sock, out, parser)
+      return resp
+    end
 
-      # and now the http_body is the chunk
-      out.rewind; return out.read
+
+    # Collects up a chunked body both collecting the body together *and*
+    # collecting the chunks into HttpResponse.raw_chunks[] for alternative
+    # analysis.
+    def read_chunked_body(header)
+      @sock.push(header.http_body)
+      header.http_body = ""
+      header.raw_chunks = []
+
+      while true
+        @notifier.read_chunk(:begins) if @notifier
+        chunk = read_chunked_header
+        header.raw_chunks << chunk
+        if !chunk.last_chunk?
+          header.http_body << chunk.http_body
+          @notifier.read_chunk(:end) if @notifier
+        else
+          @notifier.read_chunk(:end) if @notifier
+          break # last chunk, done
+        end
+      end
+
+      header
+    end
+
+    # Reads the SET_COOKIE string out of resp and translates it into 
+    # the @cookies store for this HttpClient.
+    def store_cookies(resp)
+      if resp[SET_COOKIE]
+        cookies = query_parse(resp[SET_COOKIE], ';')
+        @cookies.merge! cookies
+        @cookies.delete "path"
+      end
     end
 
     # Reads an HTTP response from the given socket.  It uses 
@@ -325,71 +341,59 @@ module RFuzz
     # As with other methods in this class it doesn't stop any exceptions
     # from reaching your code.  It's for experts who want these exceptions
     # so either write a wrapper, use net/http, or deal with it on your end.
-    def read_response(sock)
-      data, resp = nil, nil
-      parser = HttpClientParser.new
+    def read_response
       resp = HttpResponse.new
 
       notify :read_header do
-        data = sock.readpartial(1024)
-        nread = parser.execute(resp, data, 0)
-
-        while not parser.finished?
-          data += sock.readpartial(1024)
-          nread += parser.execute(resp, data, nread)
-        end
+        resp = read_parsed_header
       end
 
       notify :read_body do
-        if resp[TRANSFER_ENCODING] and resp[TRANSFER_ENCODING].index("chunked")
-          resp.http_body = read_chunked_encoding(resp, sock, parser)
+        if resp.chunked_encoding?
+          read_chunked_body(resp)
         elsif resp[CONTENT_LENGTH]
-          cl = resp[CONTENT_LENGTH].to_i
-          if cl - resp.http_body.length > 0
-            resp.http_body += sock.read(cl - resp.http_body.length)
-          elsif cl < resp.http_body.length
-            STDERR.puts "Web site sucks, they said Content-Length: #{cl}, but sent a longer body length: #{resp.http_body.length}"
-          end
+          needs = resp[CONTENT_LENGTH].to_i - resp.http_body.length
+          # Some requests can actually give a content length, and then not have content
+          # so we ignore HttpClientError exceptions and pray that's good enough
+          resp.http_body += @sock.read(needs) if needs > 0 rescue HttpClientError
         else
-          resp.http_body += sock.read
+          while true
+            begin
+              resp.http_body += @sock.read(CHUNK_SIZE, partial=true)
+            rescue HttpClientError
+              break # this is fine, they closed the socket then
+            end
+          end
         end
       end
 
-      if resp[SET_COOKIE]
-        cookies = query_parse(resp[SET_COOKIE], ';,')
-        @cookies.merge! cookies
-        @cookies.delete "path"
-      end
-
-      notify :close do
-        sock.close
-      end
-
-      resp
+      store_cookies(resp)
+      return resp
     end
 
     # Does the socket connect and then build_request, read_response
     # calls finally returning the result.
     def send_request(method, uri, req)
       begin
-        sock = nil
         notify :connect do
-          sock = TCPSocket.new(@host, @port)
+          @sock = PushBackIO.new(TCPSocket.new(@host, @port))
         end
 
         out = StringIO.new
         body = build_request(out, method, uri, req)
 
         notify :send_request do
-          sock.write(out.string + body)
-          sock.flush
+          @sock.write(out.string + body)
+          @sock.flush
         end
 
-        return read_response(sock)
+        return read_response
       rescue Object
         raise $!
       ensure
-        sock.close unless (!sock or sock.closed?)
+        if @sock
+          notify(:close) { @sock.close }
+        end
       end
     end
 
@@ -406,7 +410,7 @@ module RFuzz
 
         return resp
       else
-        raise "Invalid method: #{symbol}"
+        raise HttpClientError.new("Invalid method: #{symbol}")
       end
     end
 
@@ -499,5 +503,10 @@ module RFuzz
     # Before and after the client closes with the server.
     def close(state)
     end
+
+    # Called when a chunk from a chunked encoding is read.
+    def read_chunk(state)
+    end
   end
+
 end
