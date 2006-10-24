@@ -224,7 +224,7 @@ module RFuzz
     CRLF="\r\n"
 
     # Access to the host, port, default options, and cookies currently in play
-    attr_accessor :host, :port, :options, :cookies, :allowed_methods, :notifier
+    attr_accessor :host, :port, :options, :cookies, :allowed_methods, :notifier, :sock
 
     # Doesn't make the connect until you actually call a .put,.get, etc.
     def initialize(host, port, options = {})

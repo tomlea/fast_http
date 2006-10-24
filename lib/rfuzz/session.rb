@@ -68,7 +68,7 @@ module RFuzz
         yield @client, @rand
 
         # record the request stats then reset them
-        sample.each {|s| cur_run[s] = @client.notifier.stats[s].clone }
+        sample.each {|s| cur_run[s] = @client.notifier.stats[s].clone if @client.notifier.stats[s] }
         @client.notifier.reset
       end
 

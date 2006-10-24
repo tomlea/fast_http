@@ -11,6 +11,7 @@ module RFuzz
     def initialize(secondary)
       @secondary = secondary
       @buffer = StringIO.new
+      @die_after = rand($io_death_count) if $io_death_count
     end
 
     # Pushes the given string content back onto the stream for the 
@@ -49,7 +50,7 @@ module RFuzz
               sec = @secondary.readpartial(needs) 
             end
           rescue EOFError
-            # TODO: notify closed? error?
+            close
           end
         else
           protect { sec = @secondary.read(needs)}
@@ -76,7 +77,7 @@ module RFuzz
     end
 
     def close
-      protect { @secondary.close }
+      @secondary.close rescue nil
     end
 
     def protect

@@ -1,6 +1,6 @@
 # Simple script that hits a host port and URI with a bunch of connections
 # and measures the timings.
-
+require 'rubygems'
 require 'rfuzz/client'
 require 'rfuzz/stats'
 include RFuzz

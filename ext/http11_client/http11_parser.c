@@ -24,11 +24,11 @@
 /** Data **/
 
 #line 27 "ext/http11_client/http11_parser.c"
-static int httpclient_parser_start = 0;
+static const int httpclient_parser_start = 0;
 
-static int httpclient_parser_first_final = 36;
+static const int httpclient_parser_first_final = 36;
 
-static int httpclient_parser_error = 1;
+static const int httpclient_parser_error = 1;
 
 #line 99 "ext/http11_client/http11_parser.rl"
 
@@ -69,8 +69,7 @@ size_t httpclient_parser_execute(httpclient_parser *parser, const char *buffer, 
   
 #line 71 "ext/http11_client/http11_parser.c"
 	{
-	p -= 1;
-	if ( ++p == pe )
+	if ( p == pe )
 		goto _out;
 	switch ( cs )
 	{
@@ -114,7 +113,7 @@ st2:
 	if ( ++p == pe )
 		goto _out2;
 case 2:
-#line 118 "ext/http11_client/http11_parser.c"
+#line 117 "ext/http11_client/http11_parser.c"
 	if ( (*p) == 10 )
 		goto tr34;
 	goto st1;
@@ -157,7 +156,7 @@ st36:
 	if ( ++p == pe )
 		goto _out36;
 case 36:
-#line 161 "ext/http11_client/http11_parser.c"
+#line 160 "ext/http11_client/http11_parser.c"
 	goto st1;
 tr16:
 #line 23 "ext/http11_client/http11_parser.rl"
@@ -167,7 +166,7 @@ st3:
 	if ( ++p == pe )
 		goto _out3;
 case 3:
-#line 171 "ext/http11_client/http11_parser.c"
+#line 170 "ext/http11_client/http11_parser.c"
 	switch( (*p) ) {
 		case 13: goto tr50;
 		case 59: goto tr51;
@@ -209,7 +208,7 @@ st4:
 	if ( ++p == pe )
 		goto _out4;
 case 4:
-#line 213 "ext/http11_client/http11_parser.c"
+#line 212 "ext/http11_client/http11_parser.c"
 	if ( (*p) == 10 )
 		goto tr35;
 	goto st1;
@@ -221,7 +220,7 @@ st5:
 	if ( ++p == pe )
 		goto _out5;
 case 5:
-#line 225 "ext/http11_client/http11_parser.c"
+#line 224 "ext/http11_client/http11_parser.c"
 	switch( (*p) ) {
 		case 13: goto tr25;
 		case 59: goto tr27;
@@ -263,7 +262,7 @@ st6:
 	if ( ++p == pe )
 		goto _out6;
 case 6:
-#line 267 "ext/http11_client/http11_parser.c"
+#line 266 "ext/http11_client/http11_parser.c"
 	if ( (*p) == 10 )
 		goto tr33;
 	goto st1;
@@ -295,7 +294,7 @@ st7:
 	if ( ++p == pe )
 		goto _out7;
 case 7:
-#line 299 "ext/http11_client/http11_parser.c"
+#line 298 "ext/http11_client/http11_parser.c"
 	switch( (*p) ) {
 		case 33: goto tr9;
 		case 124: goto tr9;
@@ -327,7 +326,7 @@ st8:
 	if ( ++p == pe )
 		goto _out8;
 case 8:
-#line 331 "ext/http11_client/http11_parser.c"
+#line 330 "ext/http11_client/http11_parser.c"
 	switch( (*p) ) {
 		case 13: goto tr28;
 		case 33: goto st8;
@@ -366,7 +365,7 @@ st9:
 	if ( ++p == pe )
 		goto _out9;
 case 9:
-#line 370 "ext/http11_client/http11_parser.c"
+#line 369 "ext/http11_client/http11_parser.c"
 	switch( (*p) ) {
 		case 33: goto tr10;
 		case 124: goto tr10;
@@ -398,7 +397,7 @@ st10:
 	if ( ++p == pe )
 		goto _out10;
 case 10:
-#line 402 "ext/http11_client/http11_parser.c"
+#line 401 "ext/http11_client/http11_parser.c"
 	switch( (*p) ) {
 		case 13: goto tr22;
 		case 33: goto st10;
@@ -452,7 +451,7 @@ st11:
 	if ( ++p == pe )
 		goto _out11;
 case 11:
-#line 456 "ext/http11_client/http11_parser.c"
+#line 455 "ext/http11_client/http11_parser.c"
 	switch( (*p) ) {
 		case 33: goto tr63;
 		case 124: goto tr63;
@@ -484,7 +483,7 @@ st12:
 	if ( ++p == pe )
 		goto _out12;
 case 12:
-#line 488 "ext/http11_client/http11_parser.c"
+#line 487 "ext/http11_client/http11_parser.c"
 	switch( (*p) ) {
 		case 13: goto tr56;
 		case 33: goto st12;
@@ -523,7 +522,7 @@ st13:
 	if ( ++p == pe )
 		goto _out13;
 case 13:
-#line 527 "ext/http11_client/http11_parser.c"
+#line 526 "ext/http11_client/http11_parser.c"
 	switch( (*p) ) {
 		case 33: goto tr61;
 		case 124: goto tr61;
@@ -555,7 +554,7 @@ st14:
 	if ( ++p == pe )
 		goto _out14;
 case 14:
-#line 559 "ext/http11_client/http11_parser.c"
+#line 558 "ext/http11_client/http11_parser.c"
 	switch( (*p) ) {
 		case 13: goto tr47;
 		case 33: goto st14;
@@ -603,7 +602,7 @@ st15:
 	if ( ++p == pe )
 		goto _out15;
 case 15:
-#line 607 "ext/http11_client/http11_parser.c"
+#line 606 "ext/http11_client/http11_parser.c"
 	switch( (*p) ) {
 		case 33: goto tr62;
 		case 124: goto tr62;
@@ -635,7 +634,7 @@ st16:
 	if ( ++p == pe )
 		goto _out16;
 case 16:
-#line 639 "ext/http11_client/http11_parser.c"
+#line 638 "ext/http11_client/http11_parser.c"
 	switch( (*p) ) {
 		case 13: goto tr52;
 		case 33: goto st16;
@@ -674,7 +673,7 @@ st17:
 	if ( ++p == pe )
 		goto _out17;
 case 17:
-#line 678 "ext/http11_client/http11_parser.c"
+#line 677 "ext/http11_client/http11_parser.c"
 	switch( (*p) ) {
 		case 33: goto tr60;
 		case 124: goto tr60;
@@ -706,7 +705,7 @@ st18:
 	if ( ++p == pe )
 		goto _out18;
 case 18:
-#line 710 "ext/http11_client/http11_parser.c"
+#line 709 "ext/http11_client/http11_parser.c"
 	switch( (*p) ) {
 		case 13: goto tr44;
 		case 33: goto st18;
@@ -740,7 +739,7 @@ st19:
 	if ( ++p == pe )
 		goto _out19;
 case 19:
-#line 744 "ext/http11_client/http11_parser.c"
+#line 743 "ext/http11_client/http11_parser.c"
 	if ( (*p) == 84 )
 		goto st20;
 	goto st1;
@@ -807,7 +806,7 @@ st27:
 	if ( ++p == pe )
 		goto _out27;
 case 27:
-#line 811 "ext/http11_client/http11_parser.c"
+#line 810 "ext/http11_client/http11_parser.c"
 	if ( 48 <= (*p) && (*p) <= 57 )
 		goto tr4;
 	goto st1;
@@ -819,7 +818,7 @@ st28:
 	if ( ++p == pe )
 		goto _out28;
 case 28:
-#line 823 "ext/http11_client/http11_parser.c"
+#line 822 "ext/http11_client/http11_parser.c"
 	if ( (*p) == 32 )
 		goto tr11;
 	if ( 48 <= (*p) && (*p) <= 57 )
@@ -835,7 +834,7 @@ st29:
 	if ( ++p == pe )
 		goto _out29;
 case 29:
-#line 839 "ext/http11_client/http11_parser.c"
+#line 838 "ext/http11_client/http11_parser.c"
 	goto tr40;
 tr40:
 #line 23 "ext/http11_client/http11_parser.rl"
@@ -845,7 +844,7 @@ st30:
 	if ( ++p == pe )
 		goto _out30;
 case 30:
-#line 849 "ext/http11_client/http11_parser.c"
+#line 848 "ext/http11_client/http11_parser.c"
 	if ( (*p) == 13 )
 		goto tr39;
 	goto st30;
@@ -865,7 +864,7 @@ st31:
 	if ( ++p == pe )
 		goto _out31;
 case 31:
-#line 869 "ext/http11_client/http11_parser.c"
+#line 868 "ext/http11_client/http11_parser.c"
 	if ( (*p) == 10 )
 		goto st32;
 	goto st1;
@@ -905,7 +904,7 @@ st33:
 	if ( ++p == pe )
 		goto _out33;
 case 33:
-#line 909 "ext/http11_client/http11_parser.c"
+#line 908 "ext/http11_client/http11_parser.c"
 	switch( (*p) ) {
 		case 33: goto st33;
 		case 58: goto tr8;
@@ -944,7 +943,7 @@ st34:
 	if ( ++p == pe )
 		goto _out34;
 case 34:
-#line 948 "ext/http11_client/http11_parser.c"
+#line 947 "ext/http11_client/http11_parser.c"
 	switch( (*p) ) {
 		case 13: goto tr37;
 		case 32: goto tr42;
@@ -958,7 +957,7 @@ st35:
 	if ( ++p == pe )
 		goto _out35;
 case 35:
-#line 962 "ext/http11_client/http11_parser.c"
+#line 961 "ext/http11_client/http11_parser.c"
 	if ( (*p) == 13 )
 		goto tr37;
 	goto st35;
@@ -1017,7 +1016,7 @@ case 35:
   if(parser->body_start) {
     /* final \r\n combo encountered so stop right here */
     
-#line 1021 "ext/http11_client/http11_parser.c"
+#line 1020 "ext/http11_client/http11_parser.c"
 #line 144 "ext/http11_client/http11_parser.rl"
     parser->nread++;
   }
@@ -1030,7 +1029,7 @@ int httpclient_parser_finish(httpclient_parser *parser)
   int cs = parser->cs;
 
   
-#line 1034 "ext/http11_client/http11_parser.c"
+#line 1033 "ext/http11_client/http11_parser.c"
 #line 155 "ext/http11_client/http11_parser.rl"
 
   parser->cs = cs;

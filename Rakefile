@@ -18,7 +18,7 @@ setup_extension('fuzzrnd','fuzzrnd')
 desc "Does a full compile, test run"
 task :default => [:http11_client, :fuzzrnd, :test]
 
-version="0.8"
+version="0.9.1"
 name="rfuzz"
 
 setup_gem(name, version) do |spec|
