@@ -1,10 +1,8 @@
-require 'http11_client'
+require File.join(File.dirname(__FILE__), *%w[.. http11_client])
 require 'socket'
-require 'rfuzz/stats'
 require 'timeout'
-require 'rfuzz/pushbackio'
 
-module RFuzz
+module FastHttp
 
   # Thrown for errors not related to the protocol format (HttpClientParserError are
   # thrown for that).
@@ -196,7 +194,7 @@ module RFuzz
   # You can register a "notifier" with the client that will get called when
   # different events happen.  Right now the Notifier class just has a few
   # functions for the common parts of an HTTP request that each take a 
-  # symbol and some extra parameters.  See RFuzz::Notifier for more 
+  # symbol and some extra parameters.  See FastHttp::Notifier for more 
   # information.
   #
   # == Parameters
@@ -510,3 +508,4 @@ module RFuzz
   end
 
 end
+

@@ -1,30 +1,66 @@
 # Simple script that hits a host port and URI with a bunch of connections
 # and measures the timings.
 require 'rubygems'
-require 'rfuzz/client'
-require 'rfuzz/stats'
-include RFuzz
 
+require File.join( File.dirname(__FILE__), '..', 'lib', 'fast_http' )
+include FastHttp
 
+Thread.abort_on_exception = true
 
-if ARGV.length != 4
-  STDERR.puts "usage:  ruby perftest.rb host port uri count"
-  exit 1
-end
+host, port, uri, count = 'cwninja.com', 80, '/skills_matrix', 100
 
-host, port, uri, count = ARGV[0], ARGV[1], ARGV[2], ARGV[3].to_i
+@requests = Queue.new()
+count.times{@requests << true}
+@results = Queue.new()
 
-codes = {}
-cl = HttpClient.new(host, port, :notifier => StatsTracker.new)
-count.times do
-  begin
-    resp = cl.get(uri)
-    code = resp.http_status.to_i
-    codes[code] ||= 0
-    codes[code] += 1
-  rescue Object
+Result = Struct.new(:started_at, :ended_at, :code)
+
+@threads = []
+5.times do
+  cl = HttpClient.new(host, port)
+  @threads << Thread.start do
+    until @requests.empty?
+      job = @requests.shift(no_block = true)
+      begin
+        started_at = Time.now
+        code = cl.get(uri).http_status.to_i
+        ended_at = Time.now
+        @results << Result.new(started_at, ended_at, code)
+      rescue => e
+        p e
+      end
+    end
   end
 end
 
-puts cl.notifier.to_s
-puts "Status Codes: #{codes.inspect}"
+@stats = {}
+@stats.default = 0
+@times = []
+
+
+@results_array = []
+
+
+collector = Thread.start do
+  while result = @results.shift do
+    @stats[result.code] += 1
+    @results_array << result
+    @times << result.ended_at - result.started_at
+    puts @times.inject(0){|total, time| time + total } / @times.size
+  end
+end
+
+@threads.each do |t|
+  t.join
+end
+
+@results << false
+
+collector.join
+
+start = @results_array.sort_by{|t| t.started_at}.first.started_at
+ended = @results_array.sort_by{|t| t.ended_at}.last.ended_at
+
+
+puts "TPS: #{count/(ended - start)}"
+puts "Status Codes: #{@stats.inspect}"

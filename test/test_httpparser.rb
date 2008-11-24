@@ -4,11 +4,11 @@
 
 require 'test/unit'
 require 'http11_client'
+require 'fast_http/client'
 require 'socket'
 
-include RFuzz
-
 class HttpClientParserTest < Test::Unit::TestCase
+  include FastHttp
     
   def test_parse_simple
     parser = HttpClientParser.new

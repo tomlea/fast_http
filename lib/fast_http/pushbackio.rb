@@ -1,6 +1,6 @@
 require 'stringio'
 
-module RFuzz
+module FastHttp
   # A simple class that using a StringIO object internally to allow for faster
   # and simpler "push back" semantics.  It basically lets you read a random
   # amount from a secondary IO object, parse what is needed, and then anything

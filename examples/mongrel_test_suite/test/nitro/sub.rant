@@ -1,4 +1,0 @@
-desc "Behavior for nitro"
-task :all do
-  sys "spec", sys["*.rb"]
-end
