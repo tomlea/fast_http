@@ -1,10 +1,8 @@
-#!/usr/bin/env ruby1.9
 # Simple script that hits a host port and URI with a bunch of connections
 # and measures the timings.
-require 'rubygems'
 
 require File.join( File.dirname(__FILE__), '..', 'lib', 'fast_http' )
-
+require 'thread'
 include FastHttp
 
 Thread.abort_on_exception = true
