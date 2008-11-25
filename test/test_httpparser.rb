@@ -3,8 +3,7 @@
 # You can redistribute it and/or modify it under the same terms as Ruby.
 
 require 'test/unit'
-require 'http11_client'
-require 'fast_http/client'
+require 'fast_http'
 require 'socket'
 
 class HttpClientParserTest < Test::Unit::TestCase

@@ -3,16 +3,21 @@ require 'rake/testtask'
 require 'rake/clean'
 require 'rake/gempackagetask'
 require 'rake/rdoctask'
-require 'tools/rakehelp'
 require 'fileutils'
 include FileUtils
 
-setup_tests
-setup_clean ["pkg", "lib/*.bundle", "*.gem", ".config", "ext/**/Makefile"]
+desc "Build the Native extension"
+task :build do
+  cd 'ext/http11_client' do
+    ruby 'extconf.rb'
+    system 'make'
+  end
+end
 
-setup_rdoc ['README', 'LICENSE', 'COPYING', 'lib/**/*.rb', 'doc/**/*.rdoc']
-
-setup_extension('http11_client','http11_client')
+Rake::TestTask.new do |t|
+  t.test_files = Dir.glob("test/test_*.rb")
+  t.verbose = true
+end
 
 desc "Does a full compile, test run"
-task :default => [:http11_client, :test]
+task :default => [:build, :test]

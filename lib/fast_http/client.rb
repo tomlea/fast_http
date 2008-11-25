@@ -1,4 +1,3 @@
-require File.join(File.dirname(__FILE__), *%w[.. http11_client])
 require 'socket'
 require 'timeout'
 
