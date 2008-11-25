@@ -7,20 +7,24 @@ include FastHttp
 
 Thread.abort_on_exception = true
 
-host, port, uri, count = 'cwninja.com', 80, '/skills_matrix', 100
+host, port, uri, count = 'localhost', 80, '/', 1000
 
 @requests = Queue.new()
 count.times{@requests << true}
 @results = Queue.new()
 
-Result = Struct.new(:started_at, :ended_at, :code)
+Result = Struct.new(:started_at, :ended_at, :code) do
+  def duration
+    ended_at - started_at
+  end
+end
 
 @threads = []
 5.times do
   cl = HttpClient.new(host, port)
   @threads << Thread.start do
     until @requests.empty?
-      job = @requests.shift(no_block = true)
+      job = @requests.shift
       begin
         started_at = Time.now
         code = cl.get(uri).http_status.to_i
@@ -37,16 +41,11 @@ end
 @stats.default = 0
 @times = []
 
-
 @results_array = []
-
 
 collector = Thread.start do
   while result = @results.shift do
-    @stats[result.code] += 1
     @results_array << result
-    @times << result.ended_at - result.started_at
-    puts @times.inject(0){|total, time| time + total } / @times.size
   end
 end
 
@@ -60,7 +59,9 @@ collector.join
 
 start = @results_array.sort_by{|t| t.started_at}.first.started_at
 ended = @results_array.sort_by{|t| t.ended_at}.last.ended_at
+mean_response_time = @results_array.inject(0){|total, result| total + result.duration } / @results_array.size
+status_codes = @results_array.inject(Hash.new(0)){|acc, result| acc.merge(result.code => acc[result.code] + 1)}
 
-
+puts "Average Response Time: #{}"
 puts "TPS: #{count/(ended - start)}"
-puts "Status Codes: #{@stats.inspect}"
+puts "Status Codes: #{status_codes.inspect}"

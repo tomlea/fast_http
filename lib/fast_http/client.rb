@@ -222,16 +222,15 @@ module FastHttp
     CRLF="\r\n"
 
     # Access to the host, port, default options, and cookies currently in play
-    attr_accessor :host, :port, :options, :cookies, :allowed_methods, :notifier, :sock
+    attr_accessor :host, :port, :options, :cookies, :allowed_methods, :sock
 
     # Doesn't make the connect until you actually call a .put,.get, etc.
     def initialize(host, port, options = {})
       @options = options
       @host = host
       @port = port
-      @cookies = options[:cookies] || {}
+      @cookies = options[:cookies]
       @allowed_methods = options[:allowed_methods] || [:put, :get, :post, :delete, :head]
-      @notifier = options[:notifier]
       @redirect = options[:redirect] || false
       @parser = HttpClientParser.new
     end
@@ -239,9 +238,6 @@ module FastHttp
 
     # Builds a full request from the method, uri, req, and @cookies
     # using the default @options and writes it to out (should be an IO).
-    # 
-    # It returns the body that the caller should use (based on defaults 
-    # resolution).
     def build_request(out, method, uri, req)
       ops = @options.merge(req)
       query = ops[:query]
@@ -257,9 +253,13 @@ module FastHttp
       # blast it out
       out.write(HTTP_REQUEST_HEADER % [method, encode_query(uri,query)])
       out.write(encode_headers(head))
-      out.write(encode_cookies(@cookies.merge(req[:cookies] || {})))
+      if @cookies
+        out.write(encode_cookies(@cookies.merge(req[:cookies] || {})))
+      elsif req[:cookies]
+        out.write(encode_cookies(req[:cookies]))
+      end
       out.write(CRLF)
-      ops[:body] || ""
+      req[:body] || ""
     end
 
     # Does the read operations needed to parse a header with the @parser.
@@ -307,14 +307,11 @@ module FastHttp
       header.raw_chunks = []
 
       while true
-        @notifier.read_chunk(:begins) if @notifier
         chunk = read_chunked_header
         header.raw_chunks << chunk
         if !chunk.last_chunk?
           header.http_body << chunk.http_body
-          @notifier.read_chunk(:end) if @notifier
         else
-          @notifier.read_chunk(:end) if @notifier
           break # last chunk, done
         end
       end
@@ -325,7 +322,7 @@ module FastHttp
     # Reads the SET_COOKIE string out of resp and translates it into 
     # the @cookies store for this HttpClient.
     def store_cookies(resp)
-      if resp[SET_COOKIE]
+      if @cookies and resp[SET_COOKIE]
         cookies = query_parse(resp[SET_COOKIE], ';')
         @cookies.merge! cookies
         @cookies.delete "path"
@@ -342,25 +339,21 @@ module FastHttp
     def read_response
       resp = HttpResponse.new
 
-      notify :read_header do
-        resp = read_parsed_header
-      end
+      resp = read_parsed_header
 
-      notify :read_body do
-        if resp.chunked_encoding?
-          read_chunked_body(resp)
-        elsif resp[CONTENT_LENGTH]
-          needs = resp[CONTENT_LENGTH].to_i - resp.http_body.length
-          # Some requests can actually give a content length, and then not have content
-          # so we ignore HttpClientError exceptions and pray that's good enough
-          resp.http_body += @sock.read(needs) if needs > 0 rescue HttpClientError
-        else
-          while true
-            begin
-              resp.http_body += @sock.read(CHUNK_SIZE, partial=true)
-            rescue HttpClientError
-              break # this is fine, they closed the socket then
-            end
+      if resp.chunked_encoding?
+        read_chunked_body(resp)
+      elsif resp[CONTENT_LENGTH]
+        needs = resp[CONTENT_LENGTH].to_i - resp.http_body.length
+        # Some requests can actually give a content length, and then not have content
+        # so we ignore HttpClientError exceptions and pray that's good enough
+        resp.http_body += @sock.read(needs) if needs > 0 rescue HttpClientError
+      else
+        while true
+          begin
+            resp.http_body += @sock.read(CHUNK_SIZE, partial=true)
+          rescue HttpClientError
+            break # this is fine, they closed the socket then
           end
         end
       end
@@ -373,24 +366,20 @@ module FastHttp
     # calls finally returning the result.
     def send_request(method, uri, req)
       begin
-        notify :connect do
-          @sock = PushBackIO.new(TCPSocket.new(@host, @port))
-        end
+        @sock = PushBackIO.new(TCPSocket.new(@host, @port))
 
         out = StringIO.new
         body = build_request(out, method, uri, req)
 
-        notify :send_request do
-          @sock.write(out.string + body)
-          @sock.flush
-        end
+        @sock.write(out.string + body)
+        @sock.flush
 
         return read_response
       rescue Object
         raise $!
       ensure
         if @sock
-          notify(:close) { @sock.close }
+          @sock.close
         end
       end
     end
@@ -425,9 +414,7 @@ module FastHttp
           location = location[host.length .. -1]
         end
 
-        @notifier.redirect(:begins) if @notifier
         resp = self.send(method, location, *args)
-        @notifier.redirect(:ends) if @notifier
       end
 
       return resp
@@ -438,74 +425,7 @@ module FastHttp
     def reset
       @cookies.clear
     end
-
-
-    # Sends the notifications to the registered notifier, taking
-    # a block that it runs doing the :begins, :ends states
-    # around it.
-    #
-    # It also catches errors transparently in order to call
-    # the notifier when an attempt fails.
-    def notify(event)
-      @notifier.send(event, :begins) if @notifier
-
-      begin
-        yield
-        @notifier.send(event, :ends) if @notifier
-      rescue Object
-        @notifier.send(event, :error) if @notifier
-        raise $!
-      end
-    end
   end
-
-
-
-  # This simple class can be registered with an HttpClient and it'll
-  # get called when different parts of the HTTP request happen.
-  # Each function represents a different event, and the state parameter
-  # is a symbol of consisting of:
-  #
-  #  :begins -- event begins.
-  #  :error -- event caused exception.
-  #  :ends -- event finished (not called if error).
-  #
-  # These calls are made synchronously so you can throttle
-  # the client by sleeping inside them and can track timing
-  # data.
-  class Notifier
-    # Fired right before connecting and right after the connection.
-    def connect(state)
-    end
-
-    # Before and after the full request is actually sent.  This may
-    # become "send_header" and "send_body", but right now the whole
-    # blob is shot out in one chunk for efficiency.
-    def send_request(state)
-    end
-
-    # Called whenever a HttpClient.redirect is done and there 
-    # are redirects to follow.  You can use a notifier to detect
-    # that you're doing to many and throw an abort.
-    def redirect(state)
-    end
-
-    # Before and after the header is finally read.
-    def read_header(state)
-    end
-
-    # Before and after the body is ready.
-    def read_body(state)
-    end
-
-    # Before and after the client closes with the server.
-    def close(state)
-    end
-
-    # Called when a chunk from a chunked encoding is read.
-    def read_chunk(state)
-    end
-  end
-
+  
 end
 
