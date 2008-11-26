@@ -77,6 +77,8 @@ module FastHttp
     # Encodes the headers given in the hash returning a string
     # you can use.
     def encode_headers(head)
+      @headers_cache = {}
+      @headers_cache[head] || 
       result = "" 
       head.each do |k,v|
         if v.kind_of? Array
@@ -232,6 +234,7 @@ module FastHttp
       @allowed_methods = options[:allowed_methods] || [:put, :get, :post, :delete, :head]
       @redirect = options[:redirect] || false
       @parser = HttpClientParser.new
+      @ignore_data = options[:ignore_data]
     end
 
 
@@ -258,7 +261,6 @@ module FastHttp
         out.write(encode_cookies(req[:cookies]))
       end
       out.write(CRLF)
-      req[:body] || ""
     end
 
     # Does the read operations needed to parse a header with the @parser.
@@ -307,9 +309,9 @@ module FastHttp
 
       while true
         chunk = read_chunked_header
-        header.raw_chunks << chunk
+        header.raw_chunks << chunk unless @ignore_data
         if !chunk.last_chunk?
-          header.http_body << chunk.http_body
+          header.http_body << chunk.http_body unless @ignore_data
         else
           break # last chunk, done
         end
@@ -346,18 +348,26 @@ module FastHttp
         needs = resp[CONTENT_LENGTH].to_i - resp.http_body.length
         # Some requests can actually give a content length, and then not have content
         # so we ignore HttpClientError exceptions and pray that's good enough
-        resp.http_body += @sock.read(needs) if needs > 0 rescue HttpClientError
+        if @ignore_data
+          @sock.read(needs) if needs > 0 rescue HttpClientError
+        else
+          resp.http_body += @sock.read(needs) if needs > 0 rescue HttpClientError
+        end
       else
         while true
           begin
-            resp.http_body += @sock.read(CHUNK_SIZE, partial=true)
+            if @ignore_data
+              @sock.read(CHUNK_SIZE, partial=true)
+            else
+              resp.http_body += @sock.read(CHUNK_SIZE, partial=true)
+            end
           rescue HttpClientError
             break # this is fine, they closed the socket then
           end
         end
       end
 
-      store_cookies(resp)
+      store_cookies(resp) if @cookies
       return resp
     end
 
@@ -368,7 +378,8 @@ module FastHttp
         @sock = PushBackIO.new(TCPSocket.new(@host, @port))
 
         out = StringIO.new
-        body = build_request(out, method, uri, req)
+        build_request(out, method, uri, req)
+        body = req[:body] || "" unless method == :head or method == :get
 
         @sock.write(out.string + body)
         @sock.flush
