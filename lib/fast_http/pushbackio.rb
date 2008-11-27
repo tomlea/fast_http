@@ -11,7 +11,6 @@ module FastHttp
     def initialize(secondary)
       @secondary = secondary
       @buffer = StringIO.new
-      @die_after = rand($io_death_count) if $io_death_count
     end
 
     # Pushes the given string content back onto the stream for the 
