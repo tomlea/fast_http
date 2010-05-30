@@ -19,5 +19,8 @@ Rake::TestTask.new do |t|
   t.verbose = true
 end
 
+Rake::GemPackageTask.new(eval(File.read("fast_http.gemspec"))) do |pkg|
+end
+
 desc "Does a full compile, test run"
 task :default => [:build, :test]

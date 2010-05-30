@@ -1,9 +1,8 @@
 lib/http11_client.bundle
-fast_http-0.1.gem
-
 ext/http11_client/Makefile
 ext/http11_client/http11_client.o
 ext/http11_client/http11_parser.o
 ext/http11_client/http11_client.bundle
 ext/http11_client/mkmf.log
 ext/http11_client/conftest.*
+pkg
