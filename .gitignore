@@ -6,5 +6,4 @@ ext/http11_client/http11_client.o
 ext/http11_client/http11_parser.o
 ext/http11_client/http11_client.bundle
 ext/http11_client/mkmf.log
-
-
+ext/http11_client/conftest.*
